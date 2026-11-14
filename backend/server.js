@@ -1,3 +1,4 @@
+
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
@@ -18,10 +19,13 @@ const Category = require("./models/Category");
 
 const app = express();
 
+
 const allowedOrigins = [
     "http://localhost:5173",
+    "https://zenvora-blog.vercel.app",
     process.env.CLIENT_URL
 ].filter(Boolean);
+
 
 app.use(cors({
     origin: (origin, callback) => {
@@ -29,17 +33,27 @@ app.use(cors({
             return callback(null, true);
         }
 
+        console.log("Blocked by CORS:", origin);
         return callback(new Error("Not allowed by CORS"));
     },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
+
+app.options(/.*/, cors({
+    origin: allowedOrigins,
     credentials: true
 }));
 
 app.use(express.json({ limit: "10mb" }));
 
-app.use("/uploads", express.static(
-    path.join(__dirname, "uploads")
-));
 
+app.use(
+    "/uploads",
+    express.static(path.join(__dirname, "uploads"))
+);
 
 
 app.use("/api/auth", authRoutes);
@@ -47,7 +61,6 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/authors", authorRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api/upload", uploadRoutes);
-
 
 
 app.get("/sitemap.xml", async (req, res) => {
@@ -105,11 +118,10 @@ app.get("/sitemap.xml", async (req, res) => {
         res.send(xml);
 
     } catch (error) {
+        console.error("Sitemap error:", error.message);
         res.status(500).send("Error generating sitemap");
     }
 });
-
-
 
 app.get("/robots.txt", (req, res) => {
     const baseUrl = process.env.CLIENT_URL;
@@ -120,15 +132,13 @@ app.get("/robots.txt", (req, res) => {
 });
 
 
-
 app.get("/", (req, res) => {
     res.json({
-        name: "Lumora API",
+        name: "ZENVORA API",
         status: "operational",
         version: "1.0.0"
     });
 });
-
 
 
 const PORT = process.env.PORT || 5000;
@@ -139,7 +149,7 @@ const startServer = async () => {
         await seedDB();
 
         app.listen(PORT, () => {
-            console.log(`Lumora API running on port ${PORT}`);
+            console.log(`ZENVORA API running on port ${PORT}`);
         });
 
     } catch (error) {
